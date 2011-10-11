@@ -32,6 +32,8 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #import "SPArtist.h"
 #import "SPURLExtensions.h"
+#import "SPSession.h"
+#import "SPInternal.h"
 
 @interface SPArtist ()
 
@@ -43,7 +45,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 static NSMutableDictionary *artistCache;
 
-+(SPArtist *)artistWithArtistStruct:(sp_artist *)anArtist {
++(SPArtist *)artistWithArtistStruct:(sp_artist *)anArtist inSession:(SPSession *)aSession {
     
     if (artistCache == nil) {
         artistCache = [[NSMutableDictionary alloc] init];
@@ -56,18 +58,18 @@ static NSMutableDictionary *artistCache;
         return cachedArtist;
     }
     
-    cachedArtist = [[SPArtist alloc] initWithArtistStruct:anArtist];
+    cachedArtist = [[SPArtist alloc] initWithArtistStruct:anArtist inSession:aSession];
     
     [artistCache setObject:cachedArtist forKey:ptrValue];
     return [cachedArtist autorelease];
 }
 
-+(SPArtist *)artistWithArtistURL:(NSURL *)aURL {
++(SPArtist *)artistWithArtistURL:(NSURL *)aURL inSession:(SPSession *)aSession {
 	
 	if ([aURL spotifyLinkType] == SP_LINKTYPE_ARTIST) {
 		sp_artist *artist = sp_link_as_artist([aURL createSpotifyLink]);
 		if (artist != NULL) {
-			SPArtist *spArtist = [self artistWithArtistStruct:artist];
+			SPArtist *spArtist = [self artistWithArtistStruct:artist inSession:aSession];
 			sp_artist_release(artist);
 			return spArtist;
 		}
@@ -77,7 +79,7 @@ static NSMutableDictionary *artistCache;
 
 #pragma mark -
 
--(id)initWithArtistStruct:(sp_artist *)anArtist {
+-(id)initWithArtistStruct:(sp_artist *)anArtist inSession:(SPSession *)aSession {
     if ((self = [super init])) {
         artist = anArtist;
         sp_artist_add_ref(artist);
@@ -88,27 +90,21 @@ static NSMutableDictionary *artistCache;
         }
 
         
-        if (!sp_artist_is_loaded(artist)) {
-            [self performSelector:@selector(checkLoaded)
-                       withObject:nil
-                       afterDelay:.25];
+        if (sp_artist_is_loaded(artist)) {
+            [aSession addLoadingObject:self];
         }
     }
     return self;
 }
 
--(void)checkLoaded {
+-(BOOL)checkLoaded {
     BOOL loaded = sp_artist_is_loaded(artist);
-    if (!loaded) {
-        [self performSelector:_cmd
-                   withObject:nil
-                   afterDelay:.25];
-    } else {
-        
+    if (loaded) {
         // Fire KVO notifications
         [self willChangeValueForKey:@"name"];
         [self didChangeValueForKey:@"name"];
     }
+	return loaded;
 }
 
 -(NSString *)description {

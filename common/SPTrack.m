@@ -35,8 +35,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import "SPArtist.h"
 #import "SPSession.h"
 #import "SPURLExtensions.h"
-
-static const NSTimeInterval kCheckLoadedDuration = .25;
+#import "SPInternal.h"
 
 @interface SPTrack ()
 
@@ -65,9 +64,7 @@ static const NSTimeInterval kCheckLoadedDuration = .25;
         sp_track_add_ref(track);
         
         if (!sp_track_is_loaded(track)) {
-            [self performSelector:@selector(checkLoaded)
-                       withObject:nil
-                       afterDelay:kCheckLoadedDuration];
+            [aSession addLoadingObject:self];
         } else {
             [self loadTrackData];
         }
@@ -79,15 +76,12 @@ static const NSTimeInterval kCheckLoadedDuration = .25;
     return [NSString stringWithFormat:@"%@: %@", [super description], [self name]];
 }
          
--(void)checkLoaded {
+-(BOOL)checkLoaded {
     BOOL loaded = sp_track_is_loaded(track);
-    if (!loaded) {
-        [self performSelector:_cmd
-                   withObject:nil
-                   afterDelay:kCheckLoadedDuration];
-    } else {
+    if (loaded) {
         [self loadTrackData];
     }
+	return loaded;
 }
 
 -(void)loadTrackData {
@@ -113,7 +107,7 @@ static const NSTimeInterval kCheckLoadedDuration = .25;
         for (currentArtist = 0; currentArtist < artistCount; currentArtist++) {
             sp_artist *artist = sp_track_artist(track, (int)currentArtist);
             if (artist != NULL) {
-                [array addObject:[SPArtist artistWithArtistStruct:artist]];
+                [array addObject:[SPArtist artistWithArtistStruct:artist inSession:session]];
             }
         }
         

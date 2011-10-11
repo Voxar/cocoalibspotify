@@ -35,6 +35,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import "SPImage.h"
 #import "SPArtist.h"
 #import "SPURLExtensions.h"
+#import "SPInternal.h"
 
 @interface SPAlbum ()
 
@@ -98,9 +99,7 @@ static NSMutableDictionary *albumCache;
         }
         
         if (!sp_album_is_loaded(album)) {
-            [self performSelector:@selector(checkLoaded)
-                       withObject:nil
-                       afterDelay:.25];
+            [aSession addLoadingObject:self];
         } else {
             [self loadAlbumData];
         }
@@ -108,15 +107,12 @@ static NSMutableDictionary *albumCache;
     return self;
 }
 
--(void)checkLoaded {
+-(BOOL)checkLoaded {
     BOOL loaded = sp_album_is_loaded(album);
-    if (!loaded) {
-        [self performSelector:_cmd
-                   withObject:nil
-                   afterDelay:.25];
-    } else {
+    if (loaded) {
         [self loadAlbumData];        
     }
+	return loaded;
 }
 
 -(void)loadAlbumData {
@@ -129,7 +125,7 @@ static NSMutableDictionary *albumCache;
     
     sp_artist *spArtist = sp_album_artist(album);
     if (spArtist != NULL) {
-        [self setArtist:[SPArtist artistWithArtistStruct:spArtist]];
+        [self setArtist:[SPArtist artistWithArtistStruct:spArtist inSession:self.session]];
     }
     
     // Fire KVO notifications

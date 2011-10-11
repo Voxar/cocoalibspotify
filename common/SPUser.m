@@ -33,6 +33,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import "SPUser.h"
 #import "SPSession.h"
 #import "SPURLExtensions.h"
+#import "SPInternal.h"
 
 @interface SPUser ()
 
@@ -65,9 +66,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         session = aSession;
         
         if (!sp_user_is_loaded(user)) {
-            [self performSelector:@selector(checkLoaded)
-                       withObject:nil
-                       afterDelay:.25];
+            [aSession addLoadingObject:self];
         } else {
             [self loadUserData];
         }
@@ -76,15 +75,12 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     return self;
 }
 
--(void)checkLoaded {
+-(BOOL)checkLoaded {
     BOOL userLoaded = sp_user_is_loaded(user);
-    if (!userLoaded) {
-        [self performSelector:_cmd
-                   withObject:nil
-                   afterDelay:.25];
-    } else {
+    if (userLoaded) {
         [self loadUserData];
     }
+	return userLoaded;
 }
 
 -(void)loadUserData {

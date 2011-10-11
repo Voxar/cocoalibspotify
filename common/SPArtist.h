@@ -38,6 +38,8 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <Foundation/Foundation.h>
 #import "CocoaLibSpotifyPlatformImports.h"
 
+@class SPSession;
+
 @interface SPArtist : NSObject {
     @private
     sp_artist *artist;
@@ -56,7 +58,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  @param anArtist The sp_artist struct to create an SPArtist for.
  @return Returns the created SPArtist object. 
  */
-+(SPArtist *)artistWithArtistStruct:(sp_artist *)anArtist;
++(SPArtist *)artistWithArtistStruct:(sp_artist *)anArtist inSession:(SPSession *)aSession;
 
 /** Creates an SPArtist from the given Spotify artist URL. 
  
@@ -69,7 +71,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  @param aURL The artist URL to create an SPArtist for.
  @return Returns the created SPArtist object, or `nil` if given an invalid artist URL. 
  */
-+(SPArtist *)artistWithArtistURL:(NSURL *)aURL;
++(SPArtist *)artistWithArtistURL:(NSURL *)aURL inSession:(SPSession *)aSession;
 
 /** Initializes a new SPArtist from the given opaque sp_artist struct. 
  
@@ -80,7 +82,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  @param anArtist The sp_artist struct to create an SPArtist for.
  @return Returns the created SPArtist object. 
  */
--(id)initWithArtistStruct:(sp_artist *)anArtist;
+-(id)initWithArtistStruct:(sp_artist *)anArtist inSession:(SPSession *)aSession;
 
 ///----------------------------
 /// @name Properties

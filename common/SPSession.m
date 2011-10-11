@@ -46,6 +46,10 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import "SPPlaylistContainerInternal.h"
 #import "SPPlaylistFolderInternal.h"
 
+@interface NSObject (SPLoadedObject)
+-(BOOL)checkLoaded;
+@end
+
 @interface SPSession ()
 
 @property (readwrite, retain) SPUser *user;
@@ -57,6 +61,8 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 @property (readwrite, retain) SPPlaylist *inboxPlaylist;
 @property (readwrite, retain) SPPlaylist *starredPlaylist;
 @property (readwrite, retain) SPPlaylistContainer *userPlaylists;
+
+-(void)checkLoadingObjects;
 
 @end
 
@@ -203,6 +209,8 @@ static void log_message(sp_session *session, const char *data) {
  */
 static void metadata_updated(sp_session *session) {
 	SPSession *sess = (SPSession *)sp_session_userdata(session);
+	
+	[sess checkLoadingObjects];
 	
     SEL selector = @selector(sessionDidChangeMetadata:);
     
@@ -423,6 +431,7 @@ static SPSession *sharedSession;
         trackCache = [[NSMutableDictionary alloc] init];
         userCache = [[NSMutableDictionary alloc] init];
 		playlistCache = [[NSMutableDictionary alloc] init];
+		loadingObjects = [[NSMutableSet alloc] init];
 		
 		[self addObserver:self
                forKeyPath:@"connectionState"
@@ -485,6 +494,9 @@ static SPSession *sharedSession;
 				return nil;
 			}
 		}
+		
+		NSLog(@"App Support Dir: %@", applicationSupportDirectory);
+		NSLog(@"Spotify Cache Dir: %@", cacheDirectory);
 		
 		sp_session_config config;
 		
@@ -787,7 +799,7 @@ static SPSession *sharedSession;
 }
 
 -(SPArtist *)artistForURL:(NSURL *)url {
-	return [SPArtist artistWithArtistURL:url];
+	return [SPArtist artistWithArtistURL:url inSession:self];
 }
 
 -(SPImage *)imageForURL:(NSURL *)url {
@@ -812,7 +824,7 @@ static SPSession *sharedSession;
 			return [self albumForURL:aSpotifyUrlOfSomeKind];
 			break;
 		case SP_LINKTYPE_ARTIST:
-			return [SPArtist artistWithArtistURL:aSpotifyUrlOfSomeKind];
+			return [SPArtist artistWithArtistURL:aSpotifyUrlOfSomeKind inSession:self];
 			break;
 		case SP_LINKTYPE_SEARCH:
 			return [self searchForURL:aSpotifyUrlOfSomeKind];
@@ -846,6 +858,25 @@ static SPSession *sharedSession;
 																	 message:aFriendlyMessage
 																   inSession:self
 																	delegate:operationDelegate] autorelease];	
+}
+
+-(void)addLoadingObject:(id)object;
+{
+	@synchronized(loadingObjects){
+		[loadingObjects addObject:object];
+	}
+}
+
+-(void)checkLoadingObjects{
+	//Let objects that got new metadata fire their KVO's
+	@synchronized(loadingObjects){
+		NSMutableSet *objects = [loadingObjects copy];
+		for(id object in objects){
+			if([object checkLoaded]){
+				[loadingObjects removeObject:object];
+			}
+		}
+	}
 }
 
 #pragma mark Properties
@@ -994,6 +1025,7 @@ static SPSession *sharedSession;
     [trackCache release];
     [userCache release];
 	[playlistCache release];
+	[loadingObjects release];
     
     [super dealloc];
 }

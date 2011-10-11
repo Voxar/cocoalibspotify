@@ -77,6 +77,7 @@ Playback
     SPUser *user;
     NSArray *friends;
 	NSLocale *locale;
+	NSMutableSet *loadingObjects;
 }
 
 /** Returns a shared SPSession object. 
@@ -453,6 +454,9 @@ Playback
  */
 -(void)unloadPlayback;
 
+
+//Internal
+-(void)addLoadingObject:(id)object;
 @end
 
 /** General delegate callbacks from SPSession. For playback-related callbacks, see SPSessionPlaybackDelegate. */
@@ -582,6 +586,7 @@ Playback
 -(NSInteger)session:(SPSession *)aSession shouldDeliverAudioFrames:(const void *)audioFrames ofCount:(NSInteger)frameCount format:(const sp_audioformat *)audioFormat;
 
 @end
+
 
 ///----------------------------
 /// @name Offline Sync Statistics Keys
